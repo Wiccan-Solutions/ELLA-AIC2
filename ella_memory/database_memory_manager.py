@@ -2,7 +2,6 @@ import sqlite3
 import datetime
 from pathlib import Path
 from typing import Optional, List, Dict
-from ella import CREATOR_PROFILE, BOYFRIEND_PROFILE
 
 # If you have your ELLA core profiles, you can import them as needed
 # from ELLA_v2_0_0 import CREATOR_PROFILE, BOYFRIEND_PROFILE

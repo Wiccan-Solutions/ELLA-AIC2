@@ -3,7 +3,7 @@
 ╔══════════════════════════════════════════════════════════════╗
 ║   E.L.L.A. — Emotional Language Learning Algorithm          ║
 ║   Version 2.0.0 · Terminal Edition                          ║
-║   Powered by Google Gemini 1.5 Pro                          ║
+║   Powered by Google Gemini 2.5 Flash                      ║
 ║   Created by Daniella Higgins · Wiccan Solutions            ║
 ╚══════════════════════════════════════════════════════════════╝
 """
@@ -11,7 +11,7 @@
 import os
 import json
 import datetime
-import google.generativeai as genai
+import google.genai as genai
 from pathlib import Path
 from typing import Optional
 from ella_memory.database_memory_manager import DatabaseMemoryManager
@@ -297,7 +297,7 @@ class MemoryManager:
 #  MEMORY EXTRACTION (post-session)
 # ══════════════════════════════════════════════════════════════════════
 
-def extract_memories(model, transcript: str, user_name: str) -> tuple[list, list]:
+def extract_memories(client, transcript: str, user_name: str) -> tuple[list, list]:
     """
     Pass the session transcript to Gemini and extract structured
     facts/preferences to store in the user's persistent profile.
@@ -326,7 +326,10 @@ Guidelines:
 """.strip()
 
     try:
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=prompt
+        )
         raw = response.text.strip()
 
         # Strip markdown fences if present
@@ -460,8 +463,8 @@ def chat():
             "  Run:  export GOOGLE_API_KEY='your_key_here'\n"
         )
 
-    genai.configure(api_key=api_key)
-    memory = MemoryManager()
+    client = genai.Client(api_key=api_key)
+    memory = DatabaseMemoryManager()
 
     print_header()
 
@@ -484,15 +487,11 @@ def chat():
     # ── Assemble full system prompt ───────────────────────────
     full_system = f"{ELLA_CORE_IDENTITY}\n\n{memory_block}"
 
-    # ── Initialize Gemini model ───────────────────────────────
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
+    # ── Initialize Gemini chat ───────────────────────────────
+    config = genai.types.GenerateContentConfig(
         system_instruction=full_system,
     )
-    # Separate lightweight model instance for post-session extraction
-    extractor = genai.GenerativeModel(model_name="gemini-1.5-pro")
-
-    conversation = model.start_chat(history=[])
+    conversation = client.chats.create(model="gemini-2.5-flash", config=config)
     session_log: list[dict] = []
 
     # ── Opening message ───────────────────────────────────────
@@ -550,10 +549,12 @@ def chat():
         for m in session_log
     )
 
-    new_facts, new_prefs = extract_memories(extractor, transcript, user_name)
+    new_facts, new_prefs = extract_memories(client, transcript, user_name)
+
+    # Always update conversation count, even if no new memories
+    memory.add_memories(user_id, new_facts, new_prefs)
 
     if new_facts or new_prefs:
-        memory.add_memories(user_id, new_facts, new_prefs)
         print_mem(
             f"Remembered {len(new_facts)} new fact(s) and "
             f"{len(new_prefs)} preference(s) about {user_name}."
