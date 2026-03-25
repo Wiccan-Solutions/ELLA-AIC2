@@ -1,0 +1,95 @@
+-- ═══════════════════════════════════════════════════════════════════════════
+-- ELLA Memory Database Schema
+-- SQLite Implementation for Local Server
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- Users/Profiles Table
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    role TEXT NOT NULL DEFAULT 'user',
+    tone TEXT NOT NULL DEFAULT 'friendly',
+    override_level TEXT NOT NULL DEFAULT 'standard',
+    organization TEXT,
+    title TEXT,
+    conversation_count INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_seen TIMESTAMP,
+    UNIQUE(user_id)
+);
+
+-- User Facts Table (learned information)
+CREATE TABLE IF NOT EXISTS user_facts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    fact TEXT NOT NULL,
+    learned_from TEXT DEFAULT 'conversation',  -- 'conversation', 'manual_entry', 'extracted'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE(user_id, fact)
+);
+
+-- User Preferences Table (likes, dislikes, interests)
+CREATE TABLE IF NOT EXISTS user_preferences (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    preference TEXT NOT NULL,
+    preference_type TEXT DEFAULT 'interest',  -- 'interest', 'dislike', 'communication_style', 'hobby'
+    learned_from TEXT DEFAULT 'conversation',  -- 'conversation', 'manual_entry', 'extracted'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE(user_id, preference)
+);
+
+-- User Notes Table (core hardcoded notes for special users)
+CREATE TABLE IF NOT EXISTS user_notes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    note TEXT NOT NULL,
+    note_category TEXT DEFAULT 'general',  -- 'general', 'relationship', 'security', 'identity'
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Conversation Logs Table (timestamped sessions)
+CREATE TABLE IF NOT EXISTS conversation_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    conversation_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    session_file TEXT,  -- path to JSON log if needed
+    message_count INTEGER DEFAULT 0,
+    summary TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Individual Messages Table (granular conversation history)
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_log_id INTEGER NOT NULL,
+    role TEXT NOT NULL,  -- 'user', 'ella'
+    content TEXT NOT NULL,
+    message_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conversation_log_id) REFERENCES conversation_logs(id)
+);
+
+-- Manual Entry Audit Log (track what was manually added and by whom)
+CREATE TABLE IF NOT EXISTS manual_entry_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    entry_type TEXT NOT NULL,  -- 'fact', 'preference', 'note'
+    entry_content TEXT NOT NULL,
+    entered_by TEXT DEFAULT 'admin',
+    entry_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    notes TEXT,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+
+-- Indexes for faster queries
+CREATE INDEX IF NOT EXISTS idx_user_id ON users(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_facts ON user_facts(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_preferences ON user_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_user ON conversation_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_log_id);
