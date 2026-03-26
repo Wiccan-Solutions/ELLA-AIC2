@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>E.L.L.A. — The Emotional Language Learning Algorithm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS — Botanical Dusk palette
+═══════════════════════════════════════════════════════════ */
+:root {
+  --cream:        #faf6f0;
+  --parchment:    #f2ebe0;
+  --blush:        #e8c4b8;
+  --rose:         #c9826b;
+  --rose-deep:    #a85d4a;
+  --mauve:        #b5919e;
+  --mauve-deep:   #8c6270;
+  --amber:        #d4956a;
+  --amber-light:  #f0cba8;
+  --sage:         #8fa89a;
+  --ink:          #3a2e2a;
+  --ink-soft:     #6b5750;
+  --ink-dim:      #a08880;
+  --glass:        rgba(255,250,244,0.72);
+  --glass-border: rgba(197,158,140,0.25);
+  --shadow-warm:  rgba(168,93,74,0.12);
+  --shadow-deep:  rgba(58,46,42,0.18);
+
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-body:    'DM Sans', sans-serif;
+
+  --radius-bubble: 20px;
+  --radius-card:   24px;
+}
+
+/* ─── Reset ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+
+body {
+  font-family: var(--font-body);
+  background: var(--cream);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Ambient background ───────────────────────────────── */
+.bg-canvas {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  overflow: hidden;
+}
+.bg-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.45;
+  animation: drift 18s ease-in-out infinite alternate;
+}
+.bg-blob:nth-child(1) {
+  width: 560px; height: 560px;
+  background: radial-gradient(circle, #e8c4b8, transparent 70%);
+  top: -160px; left: -120px;
+  animation-delay: 0s;
+}
+.bg-blob:nth-child(2) {
+  width: 420px; height: 420px;
+  background: radial-gradient(circle, #d4956a55, transparent 70%);
+  bottom: -100px; right: -80px;
+  animation-delay: -6s;
+}
+.bg-blob:nth-child(3) {
+  width: 320px; height: 320px;
+  background: radial-gradient(circle, #b5919e44, transparent 70%);
+  top: 40%; left: 55%;
+  animation-delay: -12s;
+}
+@keyframes drift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(30px, 20px) scale(1.06); }
+}
+
+/* ─── Grain overlay ────────────────────────────────────── */
+.bg-grain {
+  position: fixed; inset: 0; z-index: 1; pointer-events: none;
+  opacity: 0.03;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   IDENTITY SCREEN
+══════════════════════════════════════════════════════════ */
+#identity-screen {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+#identity-screen.hidden {
+  opacity: 0; transform: translateY(-24px); pointer-events: none;
+}
+
+.identity-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: 0 24px 64px var(--shadow-deep), 0 4px 16px var(--shadow-warm);
+  padding: 52px 48px 44px;
+  width: 420px; max-width: 92vw;
+  text-align: center;
+  animation: card-in 0.8s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(32px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+/* Ella orb */
+.ella-orb {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  margin: 0 auto 24px;
+  background: radial-gradient(circle at 38% 38%, #f0cba8, #c9826b 55%, #8c6270 100%);
+  box-shadow: 0 0 0 8px rgba(201,130,107,0.12), 0 0 32px rgba(201,130,107,0.35);
+  position: relative;
+  animation: orb-pulse 3.2s ease-in-out infinite;
+}
+.ella-orb::after {
+  content: '';
+  position: absolute;
+  top: 18%; left: 22%;
+  width: 30%; height: 20%;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.42);
+  transform: rotate(-30deg);
+}
+@keyframes orb-pulse {
+  0%, 100% { box-shadow: 0 0 0 8px rgba(201,130,107,0.12), 0 0 32px rgba(201,130,107,0.35); }
+  50%       { box-shadow: 0 0 0 14px rgba(201,130,107,0.08), 0 0 52px rgba(201,130,107,0.5); }
+}
+
+.identity-title {
+  font-family: var(--font-display);
+  font-size: 2rem; font-weight: 300; letter-spacing: 0.04em;
+  color: var(--ink); margin-bottom: 4px;
+}
+.identity-subtitle {
+  font-size: 0.72rem; font-weight: 400; letter-spacing: 0.18em;
+  text-transform: uppercase; color: var(--ink-dim); margin-bottom: 32px;
+}
+
+.identity-label {
+  font-size: 0.78rem; font-weight: 500; letter-spacing: 0.08em;
+  color: var(--ink-soft); margin-bottom: 10px; text-align: left;
+}
+.identity-input {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1.5px solid var(--glass-border);
+  border-radius: 14px;
+  background: rgba(255,250,244,0.8);
+  font-family: var(--font-body); font-size: 0.95rem; color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.identity-input::placeholder { color: var(--ink-dim); }
+.identity-input:focus {
+  border-color: var(--rose);
+  box-shadow: 0 0 0 4px rgba(201,130,107,0.12);
+}
+
+.identity-btn {
+  margin-top: 20px; width: 100%;
+  padding: 15px;
+  border: none; border-radius: 14px;
+  background: linear-gradient(135deg, var(--rose), var(--rose-deep));
+  color: #fff; font-family: var(--font-body);
+  font-size: 0.9rem; font-weight: 500; letter-spacing: 0.06em;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(168,93,74,0.30);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.identity-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(168,93,74,0.40);
+}
+.identity-btn:active { transform: translateY(0); }
+
+.identity-tagline {
+  margin-top: 22px;
+  font-family: var(--font-display);
+  font-style: italic; font-size: 0.88rem;
+  color: var(--ink-dim); letter-spacing: 0.02em;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MAIN CHAT LAYOUT
+══════════════════════════════════════════════════════════ */
+#chat-screen {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; flex-direction: column;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.7s ease;
+}
+#chat-screen.visible { opacity: 1; pointer-events: all; }
+
+/* ─── Header ───────────────────────────────────────────── */
+.chat-header {
+  flex-shrink: 0;
+  padding: 16px 28px;
+  display: flex; align-items: center; gap: 14px;
+  background: var(--glass);
+  border-bottom: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.header-orb {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  background: radial-gradient(circle at 38% 38%, #f0cba8, #c9826b 55%, #8c6270);
+  box-shadow: 0 0 0 4px rgba(201,130,107,0.14), 0 2px 12px rgba(168,93,74,0.25);
+  animation: orb-pulse 3.2s ease-in-out infinite;
+}
+.header-info { flex: 1; }
+.header-name {
+  font-family: var(--font-display);
+  font-size: 1.2rem; font-weight: 500; color: var(--ink); line-height: 1.2;
+}
+.header-status {
+  font-size: 0.72rem; color: var(--sage); font-weight: 400; letter-spacing: 0.04em;
+}
+.header-status.thinking { color: var(--amber); }
+
+.memory-pill {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 12px; border-radius: 20px;
+  background: rgba(181,145,158,0.14);
+  border: 1px solid rgba(181,145,158,0.24);
+  font-size: 0.7rem; font-weight: 500; color: var(--mauve-deep);
+  letter-spacing: 0.05em;
+  transition: opacity 0.3s;
+}
+.memory-pill-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--mauve);
+  animation: mem-blink 2.4s ease-in-out infinite;
+}
+@keyframes mem-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* ─── Messages area ────────────────────────────────────── */
+.messages-wrap {
+  flex: 1; overflow-y: auto; overflow-x: hidden;
+  padding: 28px 20px 12px;
+  scroll-behavior: smooth;
+}
+.messages-wrap::-webkit-scrollbar { width: 4px; }
+.messages-wrap::-webkit-scrollbar-track { background: transparent; }
+.messages-wrap::-webkit-scrollbar-thumb {
+  background: var(--blush); border-radius: 4px;
+}
+
+.messages-inner {
+  max-width: 720px; margin: 0 auto;
+  display: flex; flex-direction: column; gap: 6px;
+}
+
+/* ─── Date divider ─────────────────────────────────────── */
+.divider {
+  text-align: center; margin: 16px 0 8px;
+  font-size: 0.68rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-dim);
+}
+
+/* ─── Bubble rows ──────────────────────────────────────── */
+.bubble-row {
+  display: flex; align-items: flex-end; gap: 10px;
+  animation: bubble-in 0.38s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes bubble-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
+}
+
+.bubble-row.ella  { justify-content: flex-start; padding-right: 15%; }
+.bubble-row.user  { justify-content: flex-end;   padding-left:  15%; }
+
+.bubble-avatar {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: radial-gradient(circle at 36% 36%, #f0cba8, #c9826b 55%, #8c6270);
+  box-shadow: 0 2px 8px rgba(168,93,74,0.22);
+  align-self: flex-end; margin-bottom: 2px;
+}
+
+.bubble {
+  padding: 12px 16px;
+  border-radius: var(--radius-bubble);
+  max-width: 100%; line-height: 1.65;
+  font-size: 0.9rem;
+  position: relative;
+  word-break: break-word;
+}
+.bubble-row.ella .bubble {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+  color: var(--ink);
+  border-bottom-left-radius: 6px;
+  box-shadow: 0 2px 14px var(--shadow-warm);
+}
+.bubble-row.user .bubble {
+  background: linear-gradient(140deg, var(--rose), var(--rose-deep));
+  color: #fff;
+  border-bottom-right-radius: 6px;
+  box-shadow: 0 4px 18px rgba(168,93,74,0.30);
+}
+
+.bubble-time {
+  font-size: 0.62rem; color: var(--ink-dim);
+  text-align: right; margin-top: 4px; letter-spacing: 0.04em;
+}
+.bubble-row.user .bubble-time { color: rgba(255,255,255,0.55); }
+
+/* ─── Typing indicator ─────────────────────────────────── */
+.typing-bubble {
+  display: flex; gap: 5px; align-items: center;
+  padding: 14px 18px;
+}
+.typing-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--rose);
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+  30%            { transform: translateY(-7px); opacity: 1; }
+}
+
+/* ─── Memory toast ─────────────────────────────────────── */
+.memory-toast {
+  position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+  background: rgba(143,168,154,0.92);
+  color: #fff; border-radius: 20px;
+  padding: 8px 18px; font-size: 0.78rem; font-weight: 500;
+  letter-spacing: 0.04em; white-space: nowrap;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.12);
+  opacity: 0; transition: opacity 0.4s;
+  pointer-events: none; z-index: 200;
+}
+.memory-toast.show { opacity: 1; }
+
+/* ─── Input bar ────────────────────────────────────────── */
+.input-bar {
+  flex-shrink: 0;
+  padding: 14px 20px 20px;
+  background: var(--glass);
+  border-top: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.input-inner {
+  max-width: 720px; margin: 0 auto;
+  display: flex; align-items: flex-end; gap: 10px;
+}
+
+.input-field {
+  flex: 1;
+  padding: 13px 18px;
+  border: 1.5px solid var(--glass-border);
+  border-radius: 18px;
+  background: rgba(255,250,244,0.85);
+  font-family: var(--font-body); font-size: 0.9rem; color: var(--ink);
+  outline: none; resize: none; max-height: 140px; overflow-y: auto;
+  line-height: 1.5;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  scrollbar-width: none;
+}
+.input-field::-webkit-scrollbar { display: none; }
+.input-field::placeholder { color: var(--ink-dim); }
+.input-field:focus {
+  border-color: var(--rose);
+  box-shadow: 0 0 0 4px rgba(201,130,107,0.10);
+}
+
+.send-btn {
+  width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
+  border: none;
+  background: linear-gradient(135deg, var(--rose), var(--rose-deep));
+  color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 14px rgba(168,93,74,0.34);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.send-btn:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(168,93,74,0.44); }
+.send-btn:active { transform: scale(0.95); }
+.send-btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+.send-btn svg { width: 18px; height: 18px; }
+
+/* ─── Welcome system message ───────────────────────────── */
+.system-msg {
+  text-align: center; margin: 8px 0 20px;
+  font-family: var(--font-display);
+  font-style: italic; font-size: 0.9rem;
+  color: var(--ink-dim);
+  animation: bubble-in 0.5s both;
+}
+
+/* ─── Wiccan watermark ─────────────────────────────────── */
+.watermark {
+  position: fixed; bottom: 82px; right: 22px;
+  font-family: var(--font-display);
+  font-size: 0.68rem; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-dim);
+  opacity: 0.5; pointer-events: none; z-index: 5;
+}
+
+/* ─── Error state ──────────────────────────────────────── */
+.error-msg {
+  text-align: center; padding: 10px 18px; border-radius: 12px;
+  background: rgba(201,130,107,0.10);
+  border: 1px solid rgba(201,130,107,0.22);
+  color: var(--rose-deep); font-size: 0.82rem;
+  margin: 8px 0; animation: bubble-in 0.3s both;
+}
+
+/* ─── Responsive ───────────────────────────────────────── */
+@media (max-width: 600px) {
+  .identity-card { padding: 40px 28px 36px; }
+  .bubble-row.ella  { padding-right: 8%; }
+  .bubble-row.user  { padding-left:  8%; }
+  .chat-header { padding: 14px 16px; }
+  .memory-pill span { display: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ░░ Background ░░ -->
+<div class="bg-canvas">
+  <div class="bg-blob"></div>
+  <div class="bg-blob"></div>
+  <div class="bg-blob"></div>
+</div>
+<div class="bg-grain"></div>
+
+<!-- ══════════════════════════════════════════════════════
+     IDENTITY SCREEN
+══════════════════════════════════════════════════════ -->
+<div id="identity-screen">
+  <div class="identity-card">
+    <div class="ella-orb"></div>
+    <h1 class="identity-title">E.L.L.A.</h1>
+    <p class="identity-subtitle">Emotional Language Learning Algorithm</p>
+
+    <p class="identity-label">Hi there. What's your name?</p>
+    <input
+      class="identity-input"
+      id="name-input"
+      type="text"
+      placeholder="Enter your name…"
+      autocomplete="off"
+      autofocus
+    />
+    <button class="identity-btn" id="start-btn">Begin Conversation →</button>
+    <p class="identity-tagline">"I am always here for you ✦"</p>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     CHAT SCREEN
+══════════════════════════════════════════════════════ -->
+<div id="chat-screen">
+
+  <!-- Header -->
+  <header class="chat-header">
+    <div class="header-orb"></div>
+    <div class="header-info">
+      <div class="header-name">Ella</div>
+      <div class="header-status" id="header-status">online ✦</div>
+    </div>
+    <div class="memory-pill" id="memory-pill" style="display:none">
+      <div class="memory-pill-dot"></div>
+      <span id="memory-count">0 memories</span>
+    </div>
+  </header>
+
+  <!-- Messages -->
+  <div class="messages-wrap" id="messages-wrap">
+    <div class="messages-inner" id="messages"></div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-bar">
+    <div class="input-inner">
+      <textarea
+        class="input-field"
+        id="msg-input"
+        placeholder="Say something to Ella…"
+        rows="1"
+      ></textarea>
+      <button class="send-btn" id="send-btn" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <line x1="22" y1="2" x2="11" y2="13"/>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Memory toast -->
+<div class="memory-toast" id="memory-toast"></div>
+
+<!-- Wiccan watermark -->
+<div class="watermark">Wiccan Solutions</div>
+
+
+<script>
+/* ════════════════════════════════════════════════════════
+   CONFIGURATION
+   Change API_BASE to your server URL if not running locally.
+════════════════════════════════════════════════════════ */
+const API_BASE = 'https://ella.yourdomain.com';  // Replace with your subdomain
+
+/* ════════════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════════════ */
+let sessionId   = null;
+let isThinking  = false;
+let userName    = '';
+
+/* ════════════════════════════════════════════════════════
+   DOM REFS
+════════════════════════════════════════════════════════ */
+const identityScreen  = document.getElementById('identity-screen');
+const chatScreen      = document.getElementById('chat-screen');
+const nameInput       = document.getElementById('name-input');
+const startBtn        = document.getElementById('start-btn');
+const messagesEl      = document.getElementById('messages');
+const msgInput        = document.getElementById('msg-input');
+const sendBtn         = document.getElementById('send-btn');
+const headerStatus    = document.getElementById('header-status');
+const memoryPill      = document.getElementById('memory-pill');
+const memoryCount     = document.getElementById('memory-count');
+const memoryToast     = document.getElementById('memory-toast');
+
+/* ════════════════════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════════════════════ */
+function now() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function scrollToBottom() {
+  const wrap = document.getElementById('messages-wrap');
+  setTimeout(() => wrap.scrollTo({ top: wrap.scrollHeight, behavior: 'smooth' }), 60);
+}
+
+function showToast(msg) {
+  memoryToast.textContent = msg;
+  memoryToast.classList.add('show');
+  setTimeout(() => memoryToast.classList.remove('show'), 3000);
+}
+
+function setThinking(val) {
+  isThinking = val;
+  sendBtn.disabled = val;
+  headerStatus.textContent = val ? 'thinking…' : 'online ✦';
+  headerStatus.className   = val ? 'header-status thinking' : 'header-status';
+}
+
+/* ─── Auto-grow textarea ─────────────────────────────── */
+msgInput.addEventListener('input', () => {
+  msgInput.style.height = 'auto';
+  msgInput.style.height = Math.min(msgInput.scrollHeight, 140) + 'px';
+  sendBtn.disabled = !msgInput.value.trim() || isThinking;
+});
+
+/* ─── Send on Enter (Shift+Enter = newline) ──────────── */
+msgInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    if (!sendBtn.disabled) sendMessage();
+  }
+});
+
+/* ════════════════════════════════════════════════════════
+   BUBBLE RENDERING
+════════════════════════════════════════════════════════ */
+function appendBubble(who, text) {
+  const row = document.createElement('div');
+  row.className = `bubble-row ${who}`;
+
+  if (who === 'ella') {
+    const av = document.createElement('div');
+    av.className = 'bubble-avatar';
+    row.appendChild(av);
+  }
+
+  const wrap = document.createElement('div');
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble';
+  bubble.textContent = text;
+
+  const time = document.createElement('div');
+  time.className = 'bubble-time';
+  time.textContent = now();
+
+  wrap.appendChild(bubble);
+  wrap.appendChild(time);
+  row.appendChild(wrap);
+
+  messagesEl.appendChild(row);
+  scrollToBottom();
+  return row;
+}
+
+function appendSystem(text) {
+  const el = document.createElement('p');
+  el.className = 'system-msg';
+  el.textContent = text;
+  messagesEl.appendChild(el);
+  scrollToBottom();
+}
+
+function appendError(text) {
+  const el = document.createElement('div');
+  el.className = 'error-msg';
+  el.textContent = text;
+  messagesEl.appendChild(el);
+  scrollToBottom();
+}
+
+/* ─── Typing indicator ───────────────────────────────── */
+let typingRow = null;
+function showTyping() {
+  typingRow = document.createElement('div');
+  typingRow.className = 'bubble-row ella';
+
+  const av = document.createElement('div');
+  av.className = 'bubble-avatar';
+  typingRow.appendChild(av);
+
+  const bubble = document.createElement('div');
+  bubble.className = 'bubble typing-bubble';
+  [1,2,3].forEach(() => {
+    const dot = document.createElement('div');
+    dot.className = 'typing-dot';
+    bubble.appendChild(dot);
+  });
+  typingRow.appendChild(bubble);
+
+  messagesEl.appendChild(typingRow);
+  scrollToBottom();
+}
+
+function hideTyping() {
+  if (typingRow) { typingRow.remove(); typingRow = null; }
+}
+
+/* ════════════════════════════════════════════════════════
+   API CALLS
+════════════════════════════════════════════════════════ */
+async function startSession(name) {
+  const res = await fetch(`${API_BASE}/session/start`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (!res.ok) throw new Error(`Server error: ${res.status}`);
+  return res.json();
+}
+
+async function sendChat(message) {
+  const res = await fetch(`${API_BASE}/chat`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: sessionId, message }),
+  });
+  if (!res.ok) throw new Error(`Server error: ${res.status}`);
+  return res.json();
+}
+
+async function endSession() {
+  if (!sessionId) return;
+  try {
+    const res = await fetch(`${API_BASE}/session/end`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ session_id: sessionId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const total = data.new_facts + data.new_preferences;
+      if (total > 0) {
+        showToast(`✦ ${total} new memory${total > 1 ? 's' : ''} saved`);
+      }
+    }
+  } catch (_) {}
+  sessionId = null;
+}
+
+/* ════════════════════════════════════════════════════════
+   IDENTITY FLOW
+════════════════════════════════════════════════════════ */
+startBtn.addEventListener('click', beginSession);
+nameInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') beginSession();
+});
+
+async function beginSession() {
+  const name = nameInput.value.trim();
+  if (!name) { nameInput.focus(); return; }
+
+  startBtn.disabled = true;
+  startBtn.textContent = 'Starting…';
+
+  try {
+    const data = await startSession(name);
+    sessionId = data.session_id;
+    userName  = data.user_name;
+
+    // Transition to chat screen
+    identityScreen.classList.add('hidden');
+    chatScreen.classList.add('visible');
+
+    // Show memory pill if applicable
+    if (data.memory_count > 0) {
+      memoryPill.style.display = 'flex';
+      memoryCount.textContent  = `${data.memory_count} memor${data.memory_count === 1 ? 'y' : 'ies'}`;
+    }
+
+    // Welcome system line
+    if (data.is_returning) {
+      appendSystem(`✦ Welcome back, ${userName}`);
+    } else {
+      appendSystem(`✦ New conversation started`);
+    }
+
+    // Ella's opening line
+    appendBubble('ella', data.opening_line);
+    msgInput.focus();
+
+  } catch (err) {
+    startBtn.disabled = false;
+    startBtn.textContent = 'Begin Conversation →';
+    appendError?.(`Couldn't connect to Ella's server. Is ella_server.py running? (${err.message})`);
+    // Show error inline in the identity card
+    const existing = document.querySelector('.id-error');
+    if (existing) existing.remove();
+    const errEl = document.createElement('p');
+    errEl.className = 'id-error';
+    errEl.style.cssText = 'margin-top:14px;color:var(--rose-deep);font-size:0.8rem;';
+    errEl.textContent = `⚠ Couldn't reach the server. Is ella_server.py running?`;
+    document.querySelector('.identity-card').appendChild(errEl);
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   SEND MESSAGE
+════════════════════════════════════════════════════════ */
+sendBtn.addEventListener('click', sendMessage);
+
+async function sendMessage() {
+  const text = msgInput.value.trim();
+  if (!text || isThinking || !sessionId) return;
+
+  appendBubble('user', text);
+  msgInput.value = '';
+  msgInput.style.height = 'auto';
+  sendBtn.disabled = true;
+  setThinking(true);
+  showTyping();
+
+  try {
+    const data = await sendChat(text);
+    hideTyping();
+    appendBubble('ella', data.reply);
+  } catch (err) {
+    hideTyping();
+    appendBubble('ella', `Something went wrong on my end — ${err.message}. Try again? 💜`);
+  } finally {
+    setThinking(false);
+    sendBtn.disabled = !msgInput.value.trim();
+    msgInput.focus();
+  }
+}
+
+/* ════════════════════════════════════════════════════════
+   SESSION CLEANUP ON PAGE LEAVE
+════════════════════════════════════════════════════════ */
+window.addEventListener('beforeunload', () => {
+  if (sessionId) {
+    // Best-effort fire-and-forget
+    navigator.sendBeacon(
+      `${API_BASE}/session/end`,
+      JSON.stringify({ session_id: sessionId })
+    );
+  }
+});
+</script>
+</body>
+</html>
